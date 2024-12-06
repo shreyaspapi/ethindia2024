@@ -35,7 +35,7 @@ interface ToolDeclaration {
 }
 
 const ChatInterface = () => {
-	const [isAzure, setIsAzure] = useState(false);
+	const [isAzure, setIsAzure] = useState(true);
 	const [apiKey, setApiKey] = useState(process.env.NEXT_PUBLIC_AZURE_KEY ?? '');
 	const [endpoint, setEndpoint] = useState(process.env.NEXT_PUBLIC_AZURE_ENDPOINT ?? '');
 	const [deployment, setDeployment] = useState(process.env.NEXT_PUBLIC_DEPLOYMENT_NAME ?? '');
@@ -252,8 +252,9 @@ const ChatInterface = () => {
 		<div className="flex h-screen">
 			{/* Parameters Panel */}
 			<div className="flex w-80 flex-col border-r bg-gray-50 p-4">
-				<div className="flex-1 overflow-y-auto">
-					<Accordion type="single" collapsible className="space-y-4">
+				{process.env.NEXT_PUBLIC_DEBUG_MODE === 'on' && (
+					<div className="flex-1 overflow-y-auto">
+						<Accordion type="single" collapsible className="space-y-4">
 						{/* Connection Settings */}
 						<AccordionItem value="connection">
 							<AccordionTrigger className="text-lg font-semibold">
@@ -378,6 +379,7 @@ const ChatInterface = () => {
 						</AccordionItem>
 					</Accordion>
 				</div>
+				)}
 
 				{/* Connect Button */}
 				<Button
