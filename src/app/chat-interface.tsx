@@ -259,23 +259,11 @@ const ChatInterface = () => {
 	const IntentUI: React.FC<Intent> = (messageIntent) => {
 		switch (messageIntent.intent) {
 			case 'bridge':
-				return (
-					<pre>
-						<BridgeInterface {...messageIntent} />
-					</pre>
-				);
+				return <BridgeInterface {...messageIntent} />;
 			case 'transfer':
-				return (
-					<pre>
-						<TransferInterface {...messageIntent} />
-					</pre>
-				);
+				return <TransferInterface {...messageIntent} />;
 			case 'swap':
-				return (
-					<pre>
-						<SwapInterface {...messageIntent} />
-					</pre>
-				);
+				return <SwapInterface {...messageIntent} />;
 			default:
 				return <pre>{JSON.stringify(messageIntent, null, 2)}</pre>;
 		}
@@ -450,7 +438,7 @@ const ChatInterface = () => {
 							key={index}
 							className={cn('mb-4 rounded-lg p-3', 'mr-auto max-w-[80%] bg-gray-100', {
 								'ml-auto mr-0 max-w-[80%] bg-blue-100': message.type === 'user',
-								'bg-red-100': message.type === 'intent'
+								'w-max': message.type === 'intent'
 							})}
 						>
 							{message.type === 'intent' ? (
