@@ -1,4 +1,5 @@
 'use client';
+// @ts-nocheck
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Plus, Send, Mic, MicOff, Power } from 'lucide-react';
@@ -22,9 +23,15 @@ import {
 } from '@/components/ui/accordion';
 import { Modality, RTClient, RTInputAudioItem, RTResponse, TurnDetection } from 'rt-client';
 import { AudioHandler } from '@/lib/audio';
+import { POLYGON_INSTRUCTION_MESSAGE } from '@/lib/defaults';
+import { cn } from '@/lib/utils';
+import { Intent } from '@/lib/types';
+import BridgeInterface from './bridgeInterface';
+import TransferInterface from './transferInterface';
+import SwapInterface from './swapInterface';
 
 interface Message {
-	type: 'user' | 'assistant' | 'status';
+	type: 'user' | 'assistant' | 'status' | 'intent';
 	content: string;
 }
 
@@ -40,8 +47,8 @@ const ChatInterface = () => {
 	const [endpoint, setEndpoint] = useState(process.env.NEXT_PUBLIC_AZURE_ENDPOINT ?? '');
 	const [deployment, setDeployment] = useState(process.env.NEXT_PUBLIC_DEPLOYMENT_NAME ?? '');
 	const [useVAD, setUseVAD] = useState(true);
-	const [instructions, setInstructions] = useState('');
-	const [temperature, setTemperature] = useState(0.9);
+	const [instructions, setInstructions] = useState(POLYGON_INSTRUCTION_MESSAGE);
+	const [temperature, setTemperature] = useState(0.6);
 	const [modality, setModality] = useState('audio');
 	const [tools, setTools] = useState<ToolDeclaration[]>([]);
 	const [messages, setMessages] = useState<Message[]>([]);
@@ -148,6 +155,25 @@ const ChatInterface = () => {
 				}
 			}
 		}
+		if (response.status === 'completed') {
+			const hasJson = response.output[0]?.content[0].transcript.includes('{');
+			const openingBracketIndex = response.output[0]?.content[0].transcript.indexOf('{');
+			const closingBracketIndex = response.output[0]?.content[0].transcript.lastIndexOf('}');
+			if (hasJson) {
+				const messageContent = response.output[0]?.content[0].transcript.substring(
+					openingBracketIndex,
+					closingBracketIndex + 1
+				);
+				const jsonObject = JSON.parse(messageContent);
+				console.log('messageContent', messageContent);
+				console.log('jsonObject', jsonObject);
+				setMessages((prevMessages) =>
+					prevMessages.map((message) =>
+						message.content === messageContent ? { ...message, type: 'intent' } : message
+					)
+				);
+			}
+		}
 	};
 
 	const handleInputAudio = async (item: RTInputAudioItem) => {
@@ -233,6 +259,36 @@ const ChatInterface = () => {
 		}
 	};
 
+	const IntentUI: React.FC<Intent> = (messageIntent) => {
+		switch (messageIntent.intent) {
+			case 'bridge':
+				return (
+					<pre>
+						<BridgeInterface {...messageIntent} />
+						Bridging {messageIntent.amount} from {messageIntent.fromNetwork} to{' '}
+						{messageIntent.toNetwork}
+					</pre>
+				);
+			case 'transfer':
+				return (
+					<pre>
+						{messageIntent.receiverAddress}
+						{/* <TransferInterface {...messageIntent} /> */}
+						Transferring {messageIntent.amount} of {messageIntent.fromToken} to{' '}
+					</pre>
+				);
+			case 'swap':
+				return (
+					<pre>
+						<SwapInterface {...messageIntent} />
+						Swapping {messageIntent.amount} {messageIntent.fromToken} to {messageIntent.toToken}
+					</pre>
+				);
+			default:
+				return <pre>{JSON.stringify(messageIntent, null, 2)}</pre>;
+		}
+	};
+
 	useEffect(() => {
 		const initAudioHandler = async () => {
 			const handler = new AudioHandler();
@@ -255,130 +311,130 @@ const ChatInterface = () => {
 				{process.env.NEXT_PUBLIC_DEBUG_MODE === 'on' && (
 					<div className="flex-1 overflow-y-auto">
 						<Accordion type="single" collapsible className="space-y-4">
-						{/* Connection Settings */}
-						<AccordionItem value="connection">
-							<AccordionTrigger className="text-lg font-semibold">
-								Connection Settings
-							</AccordionTrigger>
-							<AccordionContent className="space-y-4">
-								<div className="flex items-center justify-between">
-									<span>Use Azure OpenAI</span>
-									<Switch checked={isAzure} onCheckedChange={setIsAzure} disabled={isConnected} />
-								</div>
+							{/* Connection Settings */}
+							<AccordionItem value="connection">
+								<AccordionTrigger className="text-lg font-semibold">
+									Connection Settings
+								</AccordionTrigger>
+								<AccordionContent className="space-y-4">
+									<div className="flex items-center justify-between">
+										<span>Use Azure OpenAI</span>
+										<Switch checked={isAzure} onCheckedChange={setIsAzure} disabled={isConnected} />
+									</div>
 
-								{isAzure && (
-									<>
-										<Input
-											placeholder="Azure Endpoint"
-											value={endpoint}
-											onChange={(e) => setEndpoint(e.target.value)}
-											disabled={isConnected}
-										/>
-										<Input
-											placeholder="Deployment Name"
-											value={deployment}
-											onChange={(e) => setDeployment(e.target.value)}
-											disabled={isConnected}
-										/>
-									</>
-								)}
+									{isAzure && (
+										<>
+											<Input
+												placeholder="Azure Endpoint"
+												value={endpoint}
+												onChange={(e) => setEndpoint(e.target.value)}
+												disabled={isConnected}
+											/>
+											<Input
+												placeholder="Deployment Name"
+												value={deployment}
+												onChange={(e) => setDeployment(e.target.value)}
+												disabled={isConnected}
+											/>
+										</>
+									)}
 
-								<Input
-									type="password"
-									placeholder="API Key"
-									value={apiKey}
-									onChange={(e) => setApiKey(e.target.value)}
-									disabled={isConnected}
-								/>
-							</AccordionContent>
-						</AccordionItem>
-
-						{/* Conversation Settings */}
-						<AccordionItem value="conversation">
-							<AccordionTrigger className="text-lg font-semibold">
-								Conversation Settings
-							</AccordionTrigger>
-							<AccordionContent className="space-y-4">
-								<div className="flex items-center justify-between">
-									<span>Use Server VAD</span>
-									<Switch checked={useVAD} onCheckedChange={setUseVAD} disabled={isConnected} />
-								</div>
-								<div className="space-y-2">
-									<label className="text-sm font-medium">Instructions</label>
-									<textarea
-										className="min-h-[100px] w-full rounded border p-2"
-										value={instructions}
-										onChange={(e) => setInstructions(e.target.value)}
+									<Input
+										type="password"
+										placeholder="API Key"
+										value={apiKey}
+										onChange={(e) => setApiKey(e.target.value)}
 										disabled={isConnected}
 									/>
-								</div>
+								</AccordionContent>
+							</AccordionItem>
 
-								<div className="space-y-2">
-									<label className="text-sm font-medium">Tools</label>
-									{tools.map((tool, index) => (
-										<Card key={index} className="p-2">
-											<Input
-												placeholder="Function name"
-												value={tool.name}
-												onChange={(e) => updateTool(index, 'name', e.target.value)}
-												className="mb-2"
-												disabled={isConnected}
-											/>
-											<Input
-												placeholder="Parameters"
-												value={tool.parameters}
-												onChange={(e) => updateTool(index, 'parameters', e.target.value)}
-												className="mb-2"
-												disabled={isConnected}
-											/>
-											<Input
-												placeholder="Return value"
-												value={tool.returnValue}
-												onChange={(e) => updateTool(index, 'returnValue', e.target.value)}
-												disabled={isConnected}
-											/>
-										</Card>
-									))}
-									<Button
-										variant="outline"
-										size="sm"
-										onClick={addTool}
-										className="w-full"
-										disabled={isConnected || true}
-									>
-										<Plus className="mr-2 h-4 w-4" />
-										Add Tool
-									</Button>
-								</div>
+							{/* Conversation Settings */}
+							<AccordionItem value="conversation">
+								<AccordionTrigger className="text-lg font-semibold">
+									Conversation Settings
+								</AccordionTrigger>
+								<AccordionContent className="space-y-4">
+									<div className="flex items-center justify-between">
+										<span>Use Server VAD</span>
+										<Switch checked={useVAD} onCheckedChange={setUseVAD} disabled={isConnected} />
+									</div>
+									<div className="space-y-2">
+										<label className="text-sm font-medium">Instructions</label>
+										<textarea
+											className="min-h-[100px] w-full rounded border p-2"
+											value={instructions}
+											onChange={(e) => setInstructions(e.target.value)}
+											disabled={isConnected}
+										/>
+									</div>
 
-								<div className="space-y-2">
-									<label className="text-sm font-medium">Temperature ({temperature})</label>
-									<Slider
-										value={[temperature]}
-										onValueChange={([value]) => setTemperature(value)}
-										min={0.6}
-										max={1.2}
-										step={0.1}
-										disabled={isConnected}
-									/>
-								</div>
+									<div className="space-y-2">
+										<label className="text-sm font-medium">Tools</label>
+										{tools.map((tool, index) => (
+											<Card key={index} className="p-2">
+												<Input
+													placeholder="Function name"
+													value={tool.name}
+													onChange={(e) => updateTool(index, 'name', e.target.value)}
+													className="mb-2"
+													disabled={isConnected}
+												/>
+												<Input
+													placeholder="Parameters"
+													value={tool.parameters}
+													onChange={(e) => updateTool(index, 'parameters', e.target.value)}
+													className="mb-2"
+													disabled={isConnected}
+												/>
+												<Input
+													placeholder="Return value"
+													value={tool.returnValue}
+													onChange={(e) => updateTool(index, 'returnValue', e.target.value)}
+													disabled={isConnected}
+												/>
+											</Card>
+										))}
+										<Button
+											variant="outline"
+											size="sm"
+											onClick={addTool}
+											className="w-full"
+											disabled={isConnected || true}
+										>
+											<Plus className="mr-2 h-4 w-4" />
+											Add Tool
+										</Button>
+									</div>
 
-								<div className="space-y-2">
-									<label className="text-sm font-medium">Modality</label>
-									<Select value={modality} onValueChange={setModality} disabled={isConnected}>
-										<SelectTrigger>
-											<SelectValue />
-										</SelectTrigger>
-										<SelectContent>
-											<SelectItem value="text">Text</SelectItem>
-											<SelectItem value="audio">Audio</SelectItem>
-										</SelectContent>
-									</Select>
-								</div>
-							</AccordionContent>
-						</AccordionItem>
-					</Accordion>
-				</div>
+									<div className="space-y-2">
+										<label className="text-sm font-medium">Temperature ({temperature})</label>
+										<Slider
+											value={[temperature]}
+											onValueChange={([value]) => setTemperature(value)}
+											min={0.6}
+											max={1.2}
+											step={0.1}
+											disabled={isConnected}
+										/>
+									</div>
+
+									<div className="space-y-2">
+										<label className="text-sm font-medium">Modality</label>
+										<Select value={modality} onValueChange={setModality} disabled={isConnected}>
+											<SelectTrigger>
+												<SelectValue />
+											</SelectTrigger>
+											<SelectContent>
+												<SelectItem value="text">Text</SelectItem>
+												<SelectItem value="audio">Audio</SelectItem>
+											</SelectContent>
+										</Select>
+									</div>
+								</AccordionContent>
+							</AccordionItem>
+						</Accordion>
+					</div>
 				)}
 
 				{/* Connect Button */}
@@ -400,13 +456,16 @@ const ChatInterface = () => {
 					{messages.map((message, index) => (
 						<div
 							key={index}
-							className={`mb-4 rounded-lg p-3 ${
-								message.type === 'user'
-									? 'ml-auto max-w-[80%] bg-blue-100'
-									: 'mr-auto max-w-[80%] bg-gray-100'
-							}`}
+							className={cn('mb-4 rounded-lg p-3', 'mr-auto max-w-[80%] bg-gray-100', {
+								'ml-auto mr-0 max-w-[80%] bg-blue-100': message.type === 'user',
+								'bg-red-100': message.type === 'intent'
+							})}
 						>
-							{message.content}
+							{message.type === 'intent' ? (
+								<IntentUI {...JSON.parse(message.content)} />
+							) : (
+								message.content
+							)}
 						</div>
 					))}
 				</div>
