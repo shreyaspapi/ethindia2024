@@ -42,9 +42,9 @@ interface ToolDeclaration {
 
 const ChatInterface = () => {
   const [isAzure, setIsAzure] = useState(false);
-  const [apiKey, setApiKey] = useState("");
-  const [endpoint, setEndpoint] = useState("");
-  const [deployment, setDeployment] = useState("");
+	const [apiKey, setApiKey] = useState(process.env.NEXT_PUBLIC_AZURE_KEY ?? '');
+	const [endpoint, setEndpoint] = useState(process.env.NEXT_PUBLIC_AZURE_ENDPOINT ?? '');
+	const [deployment, setDeployment] = useState(process.env.NEXT_PUBLIC_DEPLOYMENT_NAME ?? '');
   const [useVAD, setUseVAD] = useState(true);
   const [instructions, setInstructions] = useState("");
   const [temperature, setTemperature] = useState(0.9);
