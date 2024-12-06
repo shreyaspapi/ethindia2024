@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { ArrowRight, Check, Loader2 } from 'lucide-react';
+import { ArrowDown, Check, Loader2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { TransferIntent } from '@/lib/types';
@@ -43,8 +42,9 @@ const BlockchainIcon = ({ className }: { className?: string }) => (
 const TransferInterface: React.FC<TransferIntent> = ({
 	intent,
 	amount,
-	fromToken,
-	receiverAddress
+	asset,
+	receiverAddress,
+	chain
 }) => {
 	const [state, setState] = useState<'init' | 'processing' | 'success'>('init');
 	const [progress, setProgress] = useState(0);
@@ -73,10 +73,10 @@ const TransferInterface: React.FC<TransferIntent> = ({
 			<CardContent className="p-8">
 				<div className="mb-8 text-center">
 					<h2 className="mb-2 text-2xl font-bold text-gray-900 dark:text-white">
-						{intent === 'transfer' ? 'Transfer Funds' : 'Transaction'}
+						Transferring Funds
 					</h2>
 					<p className="text-sm text-gray-500 dark:text-gray-400">
-						Sending {amount} {fromToken} to recipient
+						Sending {amount} {asset} to recipient
 					</p>
 				</div>
 
@@ -93,7 +93,7 @@ const TransferInterface: React.FC<TransferIntent> = ({
 								</div>
 								<div className="flex flex-col">
 									<span className="font-medium text-gray-900 dark:text-white">
-										{amount} {fromToken}
+										{amount} {asset}
 									</span>
 									<span className="text-sm text-gray-500 dark:text-gray-400">Token Transfer</span>
 								</div>
@@ -104,7 +104,7 @@ const TransferInterface: React.FC<TransferIntent> = ({
 					{/* Transfer Arrow */}
 					<div className="flex justify-center">
 						<div className="rounded-full bg-gray-100 p-2 dark:bg-gray-800">
-							<ArrowRight className="h-6 w-6 text-gray-400 dark:text-gray-500" />
+							<ArrowDown className="h-6 w-6 text-gray-400 dark:text-gray-500" />
 						</div>
 					</div>
 
@@ -120,11 +120,10 @@ const TransferInterface: React.FC<TransferIntent> = ({
 								</div>
 								<div className="flex flex-col">
 									<span className="font-mono text-sm text-gray-800 dark:text-gray-200">
-										{receiverAddress.substring(0, 6)}...
-										{receiverAddress.substring(receiverAddress.length - 4)}
+										{receiverAddress}
 									</span>
 									<span className="text-sm text-gray-500 dark:text-gray-400">
-										Receiving {fromToken}
+										Receiving {asset} on {chain} chain
 									</span>
 								</div>
 							</div>

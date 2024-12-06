@@ -2,9 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, Check, Loader2 } from 'lucide-react';
+import { Check, Loader2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
 
 import { SwapIntent } from '@/lib/types';
 
@@ -43,20 +42,13 @@ const BlockchainIcon = ({ className }: { className?: string }) => (
 
 const SwapInterface: React.FC<SwapIntent> = ({ ...props }) => {
 	const [state, setState] = useState<'init' | 'processing' | 'success'>('init');
-	const [progress, setProgress] = useState(0);
 
 	useEffect(() => {
 		const timer = setTimeout(() => {
 			setState('processing');
 			const interval = setInterval(() => {
-				setProgress((prev) => {
-					if (prev >= 100) {
-						clearInterval(interval);
-						setState('success');
-						return 100;
-					}
-					return prev + 10;
-				});
+				clearInterval(interval);
+				setState('success');
 			}, 300);
 			return () => clearInterval(interval);
 		}, 1000);
