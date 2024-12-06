@@ -3,6 +3,7 @@ export type Intent = BridgeIntent | TransferIntent | SwapIntent;
 export type BridgeIntent = {
 	intent: 'bridge';
 	amount: string;
+	asset: string;
 	fromNetwork: string;
 	toNetwork: string;
 };
@@ -10,8 +11,9 @@ export type BridgeIntent = {
 export type TransferIntent = {
 	intent: 'transfer';
 	amount: string;
-	fromToken: string;
+	asset: string;
 	receiverAddress: string;
+	chain: string;
 };
 
 export type SwapIntent = {

@@ -164,9 +164,6 @@ const ChatInterface = () => {
 					openingBracketIndex,
 					closingBracketIndex + 1
 				);
-				const jsonObject = JSON.parse(messageContent);
-				console.log('messageContent', messageContent);
-				console.log('jsonObject', jsonObject);
 				setMessages((prevMessages) =>
 					prevMessages.map((message) =>
 						message.content === messageContent ? { ...message, type: 'intent' } : message
@@ -265,23 +262,18 @@ const ChatInterface = () => {
 				return (
 					<pre>
 						<BridgeInterface {...messageIntent} />
-						Bridging {messageIntent.amount} from {messageIntent.fromNetwork} to{' '}
-						{messageIntent.toNetwork}
 					</pre>
 				);
 			case 'transfer':
 				return (
 					<pre>
-						{messageIntent.receiverAddress}
-						{/* <TransferInterface {...messageIntent} /> */}
-						Transferring {messageIntent.amount} of {messageIntent.fromToken} to{' '}
+						<TransferInterface {...messageIntent} />
 					</pre>
 				);
 			case 'swap':
 				return (
 					<pre>
 						<SwapInterface {...messageIntent} />
-						Swapping {messageIntent.amount} {messageIntent.fromToken} to {messageIntent.toToken}
 					</pre>
 				);
 			default:
