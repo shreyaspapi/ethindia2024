@@ -96,7 +96,5 @@ This is how the JSON should look like for transfer intent:
 	"chain": <chain name>
 }
 
-
-
-
+Don't ever include the string "json" in the response, just return the response.
 `;
