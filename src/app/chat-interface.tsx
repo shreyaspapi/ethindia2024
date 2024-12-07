@@ -60,6 +60,7 @@ const ChatInterface = () => {
 	const [isConnecting, setIsConnecting] = useState(false);
 	const clientRef = useRef<RTClient | null>(null);
 	const audioHandlerRef = useRef<AudioHandler | null>(null);
+	const [executorResult, setExecutorResult] = useState<string | null>(null);
 
 	const addTool = () => {
 		setTools([...tools, { name: '', parameters: '', returnValue: '' }]);
@@ -171,9 +172,8 @@ const ChatInterface = () => {
 						message.content === messageContent ? { ...message, type: 'intent' } : message
 					)
 				);
+				getExecutorResult(JSON.parse(messageContent));
 			}
-			console.log('messageContent', messageContent);
-			getExecutorResult(messageContent);
 		}
 	};
 
@@ -261,7 +261,8 @@ const ChatInterface = () => {
 	};
 
 	async function getExecutorResult(messageIntent: Intent) {
-		await invokeExecutor(JSON.stringify(messageIntent));
+		const result = await invokeExecutor(JSON.stringify(messageIntent));
+		setExecutorResult(result.output);
 	}
 
 	const IntentUI: React.FC<Intent> = (messageIntent) => {
@@ -269,7 +270,7 @@ const ChatInterface = () => {
 			case 'bridge':
 				return <BridgeInterface {...messageIntent} />;
 			case 'transfer':
-				return <TransferInterface {...messageIntent} />;
+				return <TransferInterface {...messageIntent} executorResult={executorResult as string} />;
 			case 'swap':
 				return <SwapInterface {...messageIntent} />;
 			default:

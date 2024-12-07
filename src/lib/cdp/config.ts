@@ -11,6 +11,7 @@ import { Wallet } from '@coinbase/coinbase-sdk';
 
 import { hashMessage } from '@coinbase/coinbase-sdk';
 
+let executorMessage: any;
 // let walletDataStr: string | null = null;
 
 // Sign Message Stuff
@@ -97,14 +98,20 @@ const model = new ChatOpenAI({
 	apiKey: process.env.OPENAI_API_KEY
 });
 
+export async function invokeModel(input: string) {
+	const result = await model.invoke(input);
+	console.log('result from invokeModel', result);
+	return {
+		output: result.content
+	};
+}
+
 // Create agent executor
 const executor = await initializeAgentExecutorWithOptions(tools, model, {
 	// agentType: "chat-conversational-react-description",
-	agentType: 'structured-chat-zero-shot-react-description',
-	verbose: true
+	agentType: 'structured-chat-zero-shot-react-description'
+	// verbose: true
 });
-
-console.log('executor from config', executor);
 
 // const result = await executor.invoke({
 // 	input: 'tell me a joke and sign it too'
@@ -113,4 +120,7 @@ console.log('executor from config', executor);
 export async function invokeExecutor(input: string) {
 	const result = await executor.invoke({ input });
 	console.log('result from invokeExecutor', result);
+	return {
+		output: result.output
+	};
 }

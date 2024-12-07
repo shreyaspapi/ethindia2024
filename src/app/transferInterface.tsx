@@ -1,10 +1,17 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ArrowDown, Check, Loader2 } from 'lucide-react';
+import { ArrowDown, Check, Loader2, X } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { TransferIntent } from '@/lib/types';
+
+import { OpenAI } from 'openai';
+
+const openai = new OpenAI({
+	apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY, // Ensure your API key is set in the environment variables,
+	dangerouslyAllowBrowser: true
+});
 
 const BlockchainIcon = ({ className }: { className?: string }) => (
 	<svg className={className} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -39,15 +46,41 @@ const BlockchainIcon = ({ className }: { className?: string }) => (
 	</svg>
 );
 
-const TransferInterface: React.FC<TransferIntent> = ({
+const TransferInterface: React.FC<TransferIntent & { executorResult: string }> = ({
 	intent,
 	amount,
 	asset,
 	receiverAddress,
-	chain
+	chain,
+	executorResult
 }) => {
-	const [state, setState] = useState<'init' | 'processing' | 'success'>('init');
+	const [state, setState] = useState<'init' | 'processing' | 'success' | 'fail'>('init');
 	const [progress, setProgress] = useState(0);
+
+	async function analyzeExecutorResult(executorResult: string) {
+		console.log(executorResult, 'executorResult');
+		if (executorResult === '') {
+			return;
+		}
+		try {
+			const chatCompletion = await openai.chat.completions.create({
+				model: 'gpt-4o-mini', // Specify the gpt4o-mini model
+				messages: [
+					{
+						role: 'user',
+						content: `Analyze the following string and determine if it indicates success or failure, if it has a transaction and says successful respond with success, if it has a transaction and says failed respond with fail, if it has no transaction and says successful respond with success, if it has no transaction and says failed respond with fail, Respond with either "success" or "fail" and nothing else:\n\n"${executorResult}"`
+					}
+				]
+			});
+
+			const result = chatCompletion.choices[0].message.content;
+			console.log(result, 'result');
+			setState(result as 'success' | 'fail');
+		} catch (error) {
+			console.error('Error analyzing executor result:', error);
+			setState('fail'); // Default to 'fail' on errors
+		}
+	}
 
 	useEffect(() => {
 		const timer = setTimeout(() => {
@@ -67,6 +100,10 @@ const TransferInterface: React.FC<TransferIntent> = ({
 
 		return () => clearTimeout(timer);
 	}, []);
+
+	useEffect(() => {
+		analyzeExecutorResult(executorResult);
+	}, [executorResult]);
 
 	return (
 		<Card className="mx-auto w-full max-w-md bg-white shadow-xl dark:bg-gray-900">
@@ -144,7 +181,7 @@ const TransferInterface: React.FC<TransferIntent> = ({
 	);
 };
 
-const StatusIndicator = ({ state }: { state: 'init' | 'processing' | 'success' }) => {
+const StatusIndicator = ({ state }: { state: 'init' | 'processing' | 'success' | 'fail' }) => {
 	return (
 		<div className="flex items-center space-x-2 text-sm">
 			{state === 'init' && (
@@ -163,6 +200,12 @@ const StatusIndicator = ({ state }: { state: 'init' | 'processing' | 'success' }
 				<div className="flex items-center space-x-1 text-green-500">
 					<Check className="h-3 w-3" />
 					<span>Complete</span>
+				</div>
+			)}
+			{state === 'fail' && (
+				<div className="flex items-center space-x-1 text-red-500">
+					<X className="h-3 w-3" />
+					<span>Failed</span>
 				</div>
 			)}
 		</div>
