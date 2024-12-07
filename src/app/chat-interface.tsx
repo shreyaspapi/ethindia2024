@@ -468,19 +468,7 @@ const ChatInterface = () => {
 							onKeyUp={(e) => e.key === 'Enter' && sendMessage()}
 							disabled={!isConnected}
 						/>
-						<AudioVisualizer
-							isRecording={isRecording}
-							toggleRecording={toggleRecording}
-							disabled={!isConnected}
-						/>
-						{/* <Button
-							variant="outline"
-							onClick={toggleRecording}
-							className={isRecording ? 'bg-red-100' : ''}
-							disabled={!isConnected}
-						>
-							{isRecording ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-						</Button> */}
+						<AudioVisualizer toggleRecording={toggleRecording} disabled={!isConnected} />
 					</div>
 				</div>
 			</div>

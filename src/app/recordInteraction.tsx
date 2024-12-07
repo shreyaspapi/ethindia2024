@@ -1,23 +1,13 @@
 'use client';
 
-import { useRef, useEffect, useState } from 'react';
-import { Mic, MicOff, X } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { Mic, MicOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-interface Blob {
-	height: number;
-	velocity: number;
-	target: number;
-	opacity: number;
-	shape: number; // 0 for circle, 1 for rectangle
-}
-
 export default function AudioVisualizer({
-	isRecording,
 	toggleRecording,
 	disabled
 }: {
-	isRecording: boolean;
 	toggleRecording: () => void;
 	disabled: boolean;
 }) {
