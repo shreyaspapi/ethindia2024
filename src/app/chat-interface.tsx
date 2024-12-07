@@ -2,7 +2,7 @@
 // @ts-nocheck
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Plus, Send, Mic, MicOff, Power } from 'lucide-react';
+import { Plus, Power } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import {
 	Select,
@@ -29,6 +29,8 @@ import { Intent } from '@/lib/types';
 import BridgeInterface from './bridgeInterface';
 import TransferInterface from './transferInterface';
 import SwapInterface from './swapInterface';
+import AudioVisualizer from './recordInteraction';
+import { invokeExecutor } from '@/lib/cdp/config';
 
 interface Message {
 	type: 'user' | 'assistant' | 'status' | 'intent';
@@ -170,6 +172,8 @@ const ChatInterface = () => {
 					)
 				);
 			}
+			console.log('messageContent', messageContent);
+			getExecutorResult(messageContent);
 		}
 	};
 
@@ -255,6 +259,10 @@ const ChatInterface = () => {
 			}
 		}
 	};
+
+	async function getExecutorResult(messageIntent: Intent) {
+		await invokeExecutor(JSON.stringify(messageIntent));
+	}
 
 	const IntentUI: React.FC<Intent> = (messageIntent) => {
 		switch (messageIntent.intent) {
@@ -452,7 +460,7 @@ const ChatInterface = () => {
 
 				{/* Input Area */}
 				<div className="border-t p-4">
-					<div className="flex gap-2">
+					<div className="flex justify-center">
 						<Input
 							value={currentMessage}
 							onChange={(e) => setCurrentMessage(e.target.value)}
@@ -460,17 +468,19 @@ const ChatInterface = () => {
 							onKeyUp={(e) => e.key === 'Enter' && sendMessage()}
 							disabled={!isConnected}
 						/>
-						<Button
+						<AudioVisualizer
+							isRecording={isRecording}
+							toggleRecording={toggleRecording}
+							disabled={!isConnected}
+						/>
+						{/* <Button
 							variant="outline"
 							onClick={toggleRecording}
 							className={isRecording ? 'bg-red-100' : ''}
 							disabled={!isConnected}
 						>
 							{isRecording ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-						</Button>
-						<Button onClick={sendMessage} disabled={!isConnected}>
-							<Send className="h-4 w-4" />
-						</Button>
+						</Button> */}
 					</div>
 				</div>
 			</div>
