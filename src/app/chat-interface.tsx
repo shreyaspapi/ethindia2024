@@ -273,6 +273,8 @@ const ChatInterface = () => {
 				return <TransferInterface {...messageIntent} executorResult={executorResult as string} />;
 			case 'swap':
 				return <SwapInterface {...messageIntent} />;
+			case 'balance':
+				return <BalanceInterface {...messageIntent} />;
 			default:
 				return <pre>{JSON.stringify(messageIntent, null, 2)}</pre>;
 		}

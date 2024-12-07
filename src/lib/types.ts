@@ -1,4 +1,4 @@
-export type Intent = BridgeIntent | TransferIntent | SwapIntent;
+export type Intent = BridgeIntent | TransferIntent | SwapIntent | BalanceIntent;
 
 export type BridgeIntent = {
 	intent: 'bridge';
@@ -22,4 +22,9 @@ export type SwapIntent = {
 	fromToken: string;
 	toToken: string;
 	chain: string;
+};
+
+export type BalanceIntent = {
+	intent: 'balance';
+	balance: string;
 };

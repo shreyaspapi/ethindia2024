@@ -96,5 +96,15 @@ This is how the JSON should look like for transfer intent:
 	"chain": <chain name>
 }
 
+If the user wants to know their current wallet balance (intent for this is "balance"), you don't need any other information.:
+
+Provide the balance in a JSON format.
+
+This is how the JSON should look like for balance intent:
+{
+	"intent": <intent name>,
+	"balance": <balance of assets>
+}
+
 Don't ever include the string "json" in the response, just return the response.
 `;
