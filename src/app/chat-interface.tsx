@@ -31,6 +31,7 @@ import TransferInterface from './transferInterface';
 import SwapInterface from './swapInterface';
 import AudioVisualizer from './recordInteraction';
 import { invokeExecutor } from '@/lib/cdp/config';
+import BalanceInterface from './balanceInterface';
 
 interface Message {
 	type: 'user' | 'assistant' | 'status' | 'intent';
@@ -261,8 +262,16 @@ const ChatInterface = () => {
 	};
 
 	async function getExecutorResult(messageIntent: Intent) {
-		const result = await invokeExecutor(JSON.stringify(messageIntent));
-		setExecutorResult(result.output);
+		if (messageIntent.intent === 'swap') {
+			const result = await invokeExecutor(
+				'swap HIT (hitman) 0x27A950c73D4bD23C581723457f2E1f7be7073BEA token with WETH token' +
+					JSON.stringify(messageIntent)
+			);
+			setExecutorResult(result.output);
+		} else {
+			const result = await invokeExecutor(JSON.stringify(messageIntent));
+			setExecutorResult(result.output);
+		}
 	}
 
 	const IntentUI: React.FC<Intent> = (messageIntent) => {
@@ -272,9 +281,9 @@ const ChatInterface = () => {
 			case 'transfer':
 				return <TransferInterface {...messageIntent} executorResult={executorResult as string} />;
 			case 'swap':
-				return <SwapInterface {...messageIntent} />;
+				return <SwapInterface {...messageIntent} executorResult={executorResult as string} />;
 			case 'balance':
-				return <BalanceInterface {...messageIntent} />;
+				return <BalanceInterface {...messageIntent} executorResult={executorResult as string} />;
 			default:
 				return <pre>{JSON.stringify(messageIntent, null, 2)}</pre>;
 		}
