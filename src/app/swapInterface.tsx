@@ -53,7 +53,10 @@ const SwapInterface: React.FC<SwapIntent & { executorResult: string }> = ({
 	chain,
 	executorResult
 }) => {
-	const [state, setState] = useState<'init' | 'processing' | 'success' | 'fail'>('init');
+	const [state, setState] = useState<'processing' | 'success' | 'fail'>('processing');
+	const [progress, setProgress] = useState(0);
+	const [prevExecutorResult, setPrevExecutorResult] = useState('');
+	const [txnUrl, setTxnUrl] = useState<string | null>(null);
 
 	async function analyzeExecutorResult(executorResult: string) {
 		console.log(executorResult, 'executorResult');
@@ -66,14 +69,22 @@ const SwapInterface: React.FC<SwapIntent & { executorResult: string }> = ({
 				messages: [
 					{
 						role: 'user',
-						content: `Analyze the following string and determine if it indicates success or failure, if it has a transaction and says successful respond with success, if it has a transaction and says failed respond with fail, if it has no transaction and says successful respond with success, if it has no transaction and says failed respond with fail, Respond with either "success" or "fail" and nothing else:\n\n"${executorResult}"`
+						content: `Analyze the following string and determine if it indicates success or failure, if it has a transaction and says successful respond with success, if it has a transaction and says failed respond with fail, if it has no transaction and says successful respond with success, if it has no transaction and says failed respond with fail, Respond with a json object for {"status": "success" or "fail", "txnUrl": "url" if it has a transaction, otherwise "txnUrl": null} only give the json object, don't type "json" or use backticks:\n\n"${executorResult}"`
 					}
 				]
 			});
 
 			const result = chatCompletion.choices[0].message.content;
 			console.log(result, 'result');
-			setState(result as 'success' | 'fail');
+			const parsedResult = JSON.parse(result ?? '');
+			setState(parsedResult.status as 'success' | 'fail');
+			if (parsedResult.status === 'success') {
+				setProgress(100);
+				setTxnUrl(parsedResult.txnUrl);
+			} else {
+				setProgress(0);
+				setTxnUrl(null);
+			}
 		} catch (error) {
 			console.error('Error analyzing executor result:', error);
 			setState('fail');
@@ -81,16 +92,17 @@ const SwapInterface: React.FC<SwapIntent & { executorResult: string }> = ({
 	}
 
 	useEffect(() => {
-		const timer = setTimeout(() => {
-			setState('processing');
-		}, 1000);
-
-		return () => clearTimeout(timer);
-	}, []);
-
-	useEffect(() => {
+		if (
+			executorResult === '' ||
+			executorResult === undefined ||
+			executorResult === null ||
+			executorResult === prevExecutorResult
+		) {
+			return;
+		}
 		analyzeExecutorResult(executorResult);
-	}, [executorResult]);
+		setPrevExecutorResult(executorResult);
+	}, [executorResult, prevExecutorResult]);
 
 	return (
 		<Card className="mx-auto w-full max-w-lg bg-gradient-to-br from-gray-100 to-gray-200 text-black shadow-xl">
@@ -128,15 +140,26 @@ const SwapInterface: React.FC<SwapIntent & { executorResult: string }> = ({
 						<TokenNode label={toToken} />
 					</div>
 				</div>
+				{txnUrl && (
+  <div className="mt-4 flex items-center justify-between">
+    View Transaction:
+    <a
+      href={txnUrl}
+      target="_blank"
+      className="text-sm text-blue-600 hover:underline"
+    >
+      {txnUrl.split('/').pop()?.slice(0, 10)}...{txnUrl.split('/').pop()?.slice(-10)}
+    </a>
+  </div>
+)}
 			</CardContent>
 		</Card>
 	);
 };
 
-const StatusIndicator = ({ state }: { state: 'init' | 'processing' | 'success' | 'fail' }) => {
+const StatusIndicator = ({ state }: { state: 'processing' | 'success' | 'fail' }) => {
 	return (
 		<div className="flex items-center space-x-2 rounded-full bg-gray-300 px-3 py-1">
-			{state === 'init' && <div className="h-2 w-2 rounded-full bg-yellow-500" />}
 			{state === 'processing' && <Loader2 className="h-4 w-4 animate-spin text-blue-600" />}
 			{state === 'success' && <Check className="h-4 w-4 text-green-600" />}
 			{state === 'fail' && <X className="h-4 w-4 text-red-600" />}
@@ -157,9 +180,8 @@ const TokenNode = ({ label }: { label: string }) => (
 	</div>
 );
 
-const TransferAnimation = ({ state }: { state: 'init' | 'processing' | 'success' | 'fail' }) => {
+const TransferAnimation = ({ state }: { state: 'processing' | 'success' | 'fail' }) => {
 	const variants = {
-		init: { pathLength: 0, opacity: 0.5 },
 		processing: {
 			pathLength: 1,
 			opacity: 1,
@@ -176,7 +198,7 @@ const TransferAnimation = ({ state }: { state: 'init' | 'processing' | 'success'
 					stroke="#3B82F6"
 					strokeWidth="4"
 					fill="none"
-					initial="init"
+					initial="processing"
 					animate={state}
 					variants={variants}
 				/>
