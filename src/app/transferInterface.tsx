@@ -54,8 +54,10 @@ const TransferInterface: React.FC<TransferIntent & { executorResult: string }> =
 	chain,
 	executorResult
 }) => {
-	const [state, setState] = useState<'init' | 'processing' | 'success' | 'fail'>('init');
+	const [state, setState] = useState<'processing' | 'success' | 'fail'>('processing');
 	const [progress, setProgress] = useState(0);
+	const [prevExecutorResult, setPrevExecutorResult] = useState('');
+	const [txnUrl, setTxnUrl] = useState<string | null>(null);
 
 	async function analyzeExecutorResult(executorResult: string) {
 		console.log(executorResult, 'executorResult');
@@ -68,16 +70,21 @@ const TransferInterface: React.FC<TransferIntent & { executorResult: string }> =
 				messages: [
 					{
 						role: 'user',
-						content: `Analyze the following string and determine if it indicates success or failure, if it has a transaction and says successful respond with success, if it has a transaction and says failed respond with fail, if it has no transaction and says successful respond with success, if it has no transaction and says failed respond with fail, Respond with either "success" or "fail" and nothing else:\n\n"${executorResult}"`
+						content: `Analyze the following string and determine if it indicates success or failure, if it has a transaction and says successful respond with success, if it has a transaction and says failed respond with fail, if it has no transaction and says successful respond with success, if it has no transaction and says failed respond with fail, Respond with a json object for {"status": "success" or "fail", "txnUrl": "url" if it has a transaction, otherwise "txnUrl": null} only give the json object, don't type "json" or use backticks:\n\n"${executorResult}"`
 					}
 				]
 			});
 
 			const result = chatCompletion.choices[0].message.content;
 			console.log(result, 'result');
-			setState(result as 'success' | 'fail');
-			if (result === 'success') {
+			const parsedResult = JSON.parse(result ?? '');
+			setState(parsedResult.status as 'success' | 'fail');
+			if (parsedResult.status === 'success') {
 				setProgress(100);
+				setTxnUrl(parsedResult.txnUrl);
+			} else {
+				setProgress(0);
+				setTxnUrl(null);
 			}
 		} catch (error) {
 			console.error('Error analyzing executor result:', error);
@@ -86,26 +93,17 @@ const TransferInterface: React.FC<TransferIntent & { executorResult: string }> =
 	}
 
 	useEffect(() => {
-		const timer = setTimeout(() => {
-			setState('processing');
-			const interval = setInterval(() => {
-				setProgress((prev) => {
-					if (prev >= 90) {
-						clearInterval(interval);
-						return 90;
-					}
-					return prev + 10;
-				});
-			}, 300);
-			return () => clearInterval(interval);
-		}, 1000);
-
-		return () => clearTimeout(timer);
-	}, []);
-
-	useEffect(() => {
+		if (
+			executorResult === '' ||
+			executorResult === undefined ||
+			executorResult === null ||
+			executorResult === prevExecutorResult
+		) {
+			return;
+		}
 		analyzeExecutorResult(executorResult);
-	}, [executorResult]);
+		setPrevExecutorResult(executorResult);
+	}, [executorResult, prevExecutorResult]);
 
 	return (
 		<Card className="mx-auto w-full max-w-md bg-white shadow-xl dark:bg-gray-900">
@@ -176,6 +174,18 @@ const TransferInterface: React.FC<TransferIntent & { executorResult: string }> =
 							<StatusIndicator state={state} />
 						</div>
 						<Progress value={progress} className="h-2 w-full bg-gray-100 dark:bg-gray-800" />
+						{txnUrl && (
+							<div className="mt-4 flex items-center justify-between">
+								View Transaction:
+								<a
+									href={txnUrl}
+									target="_blank"
+									className="text-sm text-blue-600 hover:underline dark:text-blue-400"
+								>
+									{txnUrl.split('/').pop()?.slice(0, 10)}...{txnUrl.split('/').pop()?.slice(-10)}
+								</a>
+							</div>
+						)}
 					</div>
 				</div>
 			</CardContent>
