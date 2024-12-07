@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ArrowDown, Check, Loader2, X } from 'lucide-react';
+import { ArrowDown, Check, ExternalLink, Loader2, X } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { TransferIntent } from '@/lib/types';
@@ -60,17 +60,16 @@ const TransferInterface: React.FC<TransferIntent & { executorResult: string }> =
 	const [txnUrl, setTxnUrl] = useState<string | null>(null);
 
 	async function analyzeExecutorResult(executorResult: string) {
-		console.log(executorResult, 'executorResult');
 		if (executorResult === '') {
 			return;
 		}
 		try {
 			const chatCompletion = await openai.chat.completions.create({
-				model: 'gpt-4o-mini',
+				model: 'gpt-4o',
 				messages: [
 					{
 						role: 'user',
-						content: `Analyze the following string and determine if it indicates success or failure, if it has a transaction and says successful respond with success, if it has a transaction and says failed respond with fail, if it has no transaction and says successful respond with success, if it has no transaction and says failed respond with fail, Respond with a json object for {"status": "success" or "fail", "txnUrl": "url" if it has a transaction, otherwise "txnUrl": null} only give the json object, don't type "json" or use backticks:\n\n"${executorResult}"`
+						content: `Analyze the following string and determine if it indicates success or failure, if it has a transaction and says successful respond with success, if it has a transaction and says failed respond with fail, if it has no transaction and says successful respond with success, if it has no transaction and says failed respond with fail, Respond with a json object for {"status": "success" or "fail", "txnUrl": "url" if it has a transaction, otherwise "txnUrl": null} only give the json object, don't type "json" or use backticks. Sometimes you might not have the txnUrl then check for the txnHash, generate the url based on transaction hash - https://sepolia.basescan.org/{txnHash}. In both the cases the status should be success:\n\n"${executorResult}"`
 					}
 				]
 			});
@@ -180,9 +179,10 @@ const TransferInterface: React.FC<TransferIntent & { executorResult: string }> =
 								<a
 									href={txnUrl}
 									target="_blank"
-									className="text-sm text-blue-600 hover:underline dark:text-blue-400"
+									className="flex text-sm text-blue-600 hover:underline dark:text-blue-400"
 								>
 									{txnUrl.split('/').pop()?.slice(0, 10)}...{txnUrl.split('/').pop()?.slice(-10)}
+									<ExternalLink className="ml-1 h-4 w-4" />
 								</a>
 							</div>
 						)}

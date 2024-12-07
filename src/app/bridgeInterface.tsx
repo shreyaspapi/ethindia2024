@@ -40,7 +40,7 @@ const BlockchainIcon = ({ className }: { className?: string }) => (
 	</svg>
 );
 
-const TransferWidget: React.FC<BridgeIntent & { executorResult: string }> = ({ 
+const TransferWidget: React.FC<BridgeIntent & { executorResult: string }> = ({
 	intent,
 	amount,
 	asset,
@@ -103,18 +103,20 @@ const TransferWidget: React.FC<BridgeIntent & { executorResult: string }> = ({
 		<Card className="mx-auto w-full max-w-md bg-gradient-to-br from-gray-900 to-gray-800 text-white shadow-xl">
 			<CardContent className="p-6">
 				<div className="mb-6 flex items-center justify-between">
-					<div className="flex items-center space-x-4">
+					<div className="flex w-full items-center gap-4">
 						<div className="rounded-lg bg-blue-500 p-2">
 							<BlockchainIcon className="h-6 w-6 text-white" />
 						</div>
-						<div>
-							<h3 className="text-lg font-semibold">Bridging Assets</h3>
+						<div className="flex-1">
+							<div className="flex items-center justify-between">
+								<h3 className="text-lg font-semibold">Bridging Assets</h3>
+								<StatusIndicator state={state} />
+							</div>
 							<p className="text-sm text-gray-300">
-								Bridging {amount} to {toNetwork}
+								Bridging {amount} {asset} from {fromNetwork} to {toNetwork}
 							</p>
 						</div>
 					</div>
-					<StatusIndicator state={state} />
 				</div>
 				<div className="space-y-6">
 					<div className="flex items-center justify-between">
@@ -122,7 +124,6 @@ const TransferWidget: React.FC<BridgeIntent & { executorResult: string }> = ({
 						<TransferAnimation state={state} />
 						<BlockchainNode label={toNetwork} />
 					</div>
-					<Progress value={progress} className="h-2 w-full" />
 				</div>
 			</CardContent>
 		</Card>
@@ -147,9 +148,8 @@ const BlockchainNode = ({ label }: { label: string }) => (
 			whileHover={{ scale: 1.1 }}
 			transition={{ type: 'spring', stiffness: 400, damping: 10 }}
 		>
-			<BlockchainIcon className="h-6 w-6 text-white" />
+			{label.slice(0, 3).toUpperCase()}
 		</motion.div>
-		<span className="mt-2 text-sm font-medium text-gray-300">{label}</span>
 	</div>
 );
 
@@ -176,17 +176,6 @@ const TransferAnimation = ({ state }: { state: 'processing' | 'success' | 'fail'
 					variants={variants}
 				/>
 			</svg>
-			<motion.div
-				className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 transform"
-				initial={{ scale: 0 }}
-				animate={
-					state === 'processing'
-						? { scale: [0.8, 1.2, 0.8], transition: { repeat: Infinity, duration: 2 } }
-						: { scale: 1 }
-				}
-			>
-				<ArrowRight className="text-blue-400" size={24} />
-			</motion.div>
 		</div>
 	);
 };

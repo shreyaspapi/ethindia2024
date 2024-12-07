@@ -48,7 +48,7 @@ const ChatInterface = () => {
 	const [apiKey, setApiKey] = useState(process.env.NEXT_PUBLIC_AZURE_KEY ?? '');
 	const [endpoint, setEndpoint] = useState(process.env.NEXT_PUBLIC_AZURE_ENDPOINT ?? '');
 	const [deployment, setDeployment] = useState(process.env.NEXT_PUBLIC_DEPLOYMENT_NAME ?? '');
-	const [useVAD, setUseVAD] = useState(true);
+	const [useVAD, setUseVAD] = useState(false);
 	const [instructions, setInstructions] = useState(POLYGON_INSTRUCTION_MESSAGE);
 	const [temperature, setTemperature] = useState(0.6);
 	const [modality, setModality] = useState('audio');
@@ -445,8 +445,8 @@ const ChatInterface = () => {
 					{messages.map((message, index) => (
 						<div
 							key={index}
-							className={cn('mb-4 rounded-lg p-3', 'mr-auto max-w-[80%] bg-gray-100', {
-								'ml-auto mr-0 max-w-[80%] bg-blue-100': message.type === 'user',
+							className={cn('mb-4 rounded-lg p-3', 'mr-auto max-w-[60%] bg-gray-100', {
+								'ml-auto mr-0 max-w-[60%] bg-blue-100': message.type === 'user',
 								'w-max': message.type === 'intent'
 							})}
 						>
@@ -462,13 +462,13 @@ const ChatInterface = () => {
 				{/* Input Area */}
 				<div className="border-t p-4">
 					<div className="flex justify-center">
-						<Input
+						{/* <Input
 							value={currentMessage}
 							onChange={(e) => setCurrentMessage(e.target.value)}
 							placeholder="Type your message..."
 							onKeyUp={(e) => e.key === 'Enter' && sendMessage()}
 							disabled={!isConnected}
-						/>
+						/> */}
 						<AudioVisualizer toggleRecording={toggleRecording} disabled={!isConnected} />
 					</div>
 				</div>
