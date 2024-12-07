@@ -215,6 +215,126 @@ const bridgeUsdcTool = new CdpTool(
 );
 tools.push(bridgeUsdcTool);
 
+// Add approve message prompt and input schema
+const APPROVE_PROMPT = `
+This tool will create and sign an ERC20 approve transaction allowing a spender to transfer tokens on behalf of the owner.
+`;
+
+const ApproveInput = z
+    .object({
+        spender: z.string().describe("The address being approved to spend tokens"),
+        value: z.string().describe("The amount of tokens to approve (in wei)"),
+        tokenAddress: z.string().describe("The ERC20 token contract address"),
+    })
+    .strip()
+    .describe("Parameters for ERC20 approve function");
+
+const erc20Abi = [
+    {
+        inputs: [
+            { internalType: "address", name: "spender", type: "address" },
+            { internalType: "uint256", name: "value", type: "uint256" }
+        ],
+        name: "approve",
+        outputs: [{ internalType: "bool", name: "", type: "bool" }],
+        stateMutability: "nonpayable",
+        type: "function"
+    }
+];
+
+// Add swap prompt and input schema
+const SWAP_PROMPT = `
+This tool is used to swap hit token with WETH token.`;
+
+const SwapInput = z
+    .object({
+        amountA: z.string().describe("The amount of tokenA to swap (in wei)"),
+    })
+    .strip()
+    .describe("Parameters for swap function");
+
+const swapAbi = [
+    {
+        inputs: [
+            { internalType: "uint256", name: "amountA", type: "uint256" }
+        ],
+        name: "swap",
+        outputs: [],
+        stateMutability: "nonpayable",
+        type: "function"
+    }
+];
+
+// Add approve function
+async function approve(
+    wallet: Wallet,
+    args: z.infer<typeof ApproveInput>
+): Promise<string> {
+    try {
+        const signedTx = await wallet.invokeContract({
+            contractAddress: args.tokenAddress,
+            abi: erc20Abi,
+            method: "approve",
+            args: {
+                spender: args.spender,
+                value: args.value
+            }
+        });
+        return `Approve transaction signed: ${signedTx}`;
+    } catch (e) {
+        console.error(e);
+        throw e;
+    }
+}
+
+// Add swap function
+async function swap(
+    wallet: Wallet,
+    args: z.infer<typeof SwapInput>
+): Promise<string> {
+    try {
+        const signedTx = await wallet.invokeContract({
+            contractAddress: "0x4257503d8b6Fe15B1d72d3FF536309f4eDF291DE",
+            abi: swapAbi,
+            method: "swap",
+            args: {
+                amountA: args.amountA
+            }
+        });
+        const txnId = await signedTx?.wait();
+        return `Swap transaction ID: ${txnId}`;
+    } catch (e) {
+        console.error(e);
+        throw e;
+    }
+}
+
+// Add the approve tool
+const approveTool = new CdpTool(
+    {
+        name: "approve_tokens",
+        description: APPROVE_PROMPT,
+        argsSchema: ApproveInput,
+        func: approve,
+    },
+    agentkit
+);
+
+// Add the swap tool
+const swapTool = new CdpTool(
+    {
+        name: "swap_tokens",
+        description: SWAP_PROMPT,
+        argsSchema: SwapInput,
+        func: swap,
+    },
+    agentkit
+);
+
+// Add tools to the tools array
+tools.push(approveTool);
+tools.push(swapTool);
+
 // Initialize LLM
 const model = new ChatOpenAI({
     model: 'gpt-4o',
