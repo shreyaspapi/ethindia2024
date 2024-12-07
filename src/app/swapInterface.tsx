@@ -2,10 +2,15 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Check, Loader2 } from 'lucide-react';
+import { Check, Loader2, X } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
-
 import { SwapIntent } from '@/lib/types';
+import { OpenAI } from 'openai';
+
+const openai = new OpenAI({
+	apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
+	dangerouslyAllowBrowser: true
+});
 
 const BlockchainIcon = ({ className }: { className?: string }) => (
 	<svg className={className} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -40,21 +45,52 @@ const BlockchainIcon = ({ className }: { className?: string }) => (
 	</svg>
 );
 
-const SwapInterface: React.FC<SwapIntent> = ({ ...props }) => {
-	const [state, setState] = useState<'init' | 'processing' | 'success'>('init');
+const SwapInterface: React.FC<SwapIntent & { executorResult: string }> = ({ 
+	intent,
+	amount,
+	fromToken,
+	toToken,
+	chain,
+	executorResult
+}) => {
+	const [state, setState] = useState<'init' | 'processing' | 'success' | 'fail'>('init');
+
+	async function analyzeExecutorResult(executorResult: string) {
+		console.log(executorResult, 'executorResult');
+		if (executorResult === '') {
+			return;
+		}
+		try {
+			const chatCompletion = await openai.chat.completions.create({
+				model: 'gpt-4o-mini',
+				messages: [
+					{
+						role: 'user',
+						content: `Analyze the following string and determine if it indicates success or failure, if it has a transaction and says successful respond with success, if it has a transaction and says failed respond with fail, if it has no transaction and says successful respond with success, if it has no transaction and says failed respond with fail, Respond with either "success" or "fail" and nothing else:\n\n"${executorResult}"`
+					}
+				]
+			});
+
+			const result = chatCompletion.choices[0].message.content;
+			console.log(result, 'result');
+			setState(result as 'success' | 'fail');
+		} catch (error) {
+			console.error('Error analyzing executor result:', error);
+			setState('fail');
+		}
+	}
 
 	useEffect(() => {
 		const timer = setTimeout(() => {
 			setState('processing');
-			const interval = setInterval(() => {
-				clearInterval(interval);
-				setState('success');
-			}, 300);
-			return () => clearInterval(interval);
 		}, 1000);
 
 		return () => clearTimeout(timer);
 	}, []);
+
+	useEffect(() => {
+		analyzeExecutorResult(executorResult);
+	}, [executorResult]);
 
 	return (
 		<Card className="mx-auto w-full max-w-lg bg-gradient-to-br from-gray-100 to-gray-200 text-black shadow-xl">
@@ -67,7 +103,7 @@ const SwapInterface: React.FC<SwapIntent> = ({ ...props }) => {
 						<div>
 							<h3 className="text-lg font-semibold">Swapping Tokens</h3>
 							<p className="text-sm text-gray-700">
-								Swapping {props.amount} {props.fromToken} to {props.toToken} tokens
+								Swapping {amount} {fromToken} to {toToken} tokens
 							</p>
 						</div>
 					</div>
@@ -81,15 +117,15 @@ const SwapInterface: React.FC<SwapIntent> = ({ ...props }) => {
 					</div>
 					<div className="flex items-center gap-1">
 						<span>on</span>
-						<span className="font-semibold text-blue-600">{props.chain || 'Ethereum'}</span>
+						<span className="font-semibold text-blue-600">{chain || 'Ethereum'}</span>
 					</div>
 				</div>
 
 				<div className="space-y-6">
 					<div className="flex items-center justify-between">
-						<TokenNode label={props.fromToken} />
+						<TokenNode label={fromToken} />
 						<TransferAnimation state={state} />
-						<TokenNode label={props.toToken} />
+						<TokenNode label={toToken} />
 					</div>
 				</div>
 			</CardContent>
@@ -97,12 +133,13 @@ const SwapInterface: React.FC<SwapIntent> = ({ ...props }) => {
 	);
 };
 
-const StatusIndicator = ({ state }: { state: 'init' | 'processing' | 'success' }) => {
+const StatusIndicator = ({ state }: { state: 'init' | 'processing' | 'success' | 'fail' }) => {
 	return (
 		<div className="flex items-center space-x-2 rounded-full bg-gray-300 px-3 py-1">
 			{state === 'init' && <div className="h-2 w-2 rounded-full bg-yellow-500" />}
 			{state === 'processing' && <Loader2 className="h-4 w-4 animate-spin text-blue-600" />}
 			{state === 'success' && <Check className="h-4 w-4 text-green-600" />}
+			{state === 'fail' && <X className="h-4 w-4 text-red-600" />}
 			<span className="text-sm font-medium capitalize">{state}</span>
 		</div>
 	);
@@ -120,7 +157,7 @@ const TokenNode = ({ label }: { label: string }) => (
 	</div>
 );
 
-const TransferAnimation = ({ state }: { state: 'init' | 'processing' | 'success' }) => {
+const TransferAnimation = ({ state }: { state: 'init' | 'processing' | 'success' | 'fail' }) => {
 	const variants = {
 		init: { pathLength: 0, opacity: 0.5 },
 		processing: {

@@ -64,7 +64,7 @@ const TransferInterface: React.FC<TransferIntent & { executorResult: string }> =
 		}
 		try {
 			const chatCompletion = await openai.chat.completions.create({
-				model: 'gpt-4o-mini', // Specify the gpt4o-mini model
+				model: 'gpt-4o-mini',
 				messages: [
 					{
 						role: 'user',
@@ -76,9 +76,12 @@ const TransferInterface: React.FC<TransferIntent & { executorResult: string }> =
 			const result = chatCompletion.choices[0].message.content;
 			console.log(result, 'result');
 			setState(result as 'success' | 'fail');
+			if (result === 'success') {
+				setProgress(100);
+			}
 		} catch (error) {
 			console.error('Error analyzing executor result:', error);
-			setState('fail'); // Default to 'fail' on errors
+			setState('fail');
 		}
 	}
 
@@ -87,10 +90,9 @@ const TransferInterface: React.FC<TransferIntent & { executorResult: string }> =
 			setState('processing');
 			const interval = setInterval(() => {
 				setProgress((prev) => {
-					if (prev >= 100) {
+					if (prev >= 90) {
 						clearInterval(interval);
-						setState('success');
-						return 100;
+						return 90;
 					}
 					return prev + 10;
 				});
