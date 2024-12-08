@@ -173,6 +173,7 @@ const ChatInterface = () => {
 						message.content === messageContent ? { ...message, type: 'intent' } : message
 					)
 				);
+				console.log('messageContent', messageContent);
 				getExecutorResult(JSON.parse(messageContent));
 			}
 		}
@@ -267,6 +268,9 @@ const ChatInterface = () => {
 				'swap HIT (hitman) 0x27A950c73D4bD23C581723457f2E1f7be7073BEA token with WETH token' +
 					JSON.stringify(messageIntent)
 			);
+			setExecutorResult(result.output);
+		} else if (messageIntent.intent === 'balance') {
+			const result = await invokeExecutor('I want to know the balance of my account');
 			setExecutorResult(result.output);
 		} else {
 			const result = await invokeExecutor(JSON.stringify(messageIntent));

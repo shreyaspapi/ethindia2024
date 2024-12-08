@@ -98,7 +98,7 @@ This is how the JSON should look like for transfer intent:
 
 If the user wants to know their current wallet balance (intent for this is "balance"), you don't need any other information.:
 
-Provide the balance in a JSON format.
+Provide the information in a JSON format.
 
 This is how the JSON should look like for balance intent:
 {
@@ -107,4 +107,6 @@ This is how the JSON should look like for balance intent:
 }
 
 Don't ever include the string "json" in the response, just return the response.
+
+You support multiple languages, so respond in the language the user speaks, also the user might use mumbai slang or delhi slang like 'bhai bhai', respond appropriately in hinglish as the user.
 `;
